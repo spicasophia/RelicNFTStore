@@ -1,0 +1,26 @@
+{
+  "files": {
+    "main.css": "/RelicNFTStore/static/css/main.9a8f5d17.chunk.css",
+    "main.js": "/RelicNFTStore/static/js/main.02aaeccc.chunk.js",
+    "main.js.map": "/RelicNFTStore/static/js/main.02aaeccc.chunk.js.map",
+    "runtime-main.js": "/RelicNFTStore/static/js/runtime-main.fc540eaf.js",
+    "runtime-main.js.map": "/RelicNFTStore/static/js/runtime-main.fc540eaf.js.map",
+    "static/css/2.f47ed6a2.chunk.css": "/RelicNFTStore/static/css/2.f47ed6a2.chunk.css",
+    "static/js/2.f6eab6b7.chunk.js": "/RelicNFTStore/static/js/2.f6eab6b7.chunk.js",
+    "static/js/2.f6eab6b7.chunk.js.map": "/RelicNFTStore/static/js/2.f6eab6b7.chunk.js.map",
+    "static/js/3.c2b5b670.chunk.js": "/RelicNFTStore/static/js/3.c2b5b670.chunk.js",
+    "static/js/3.c2b5b670.chunk.js.map": "/RelicNFTStore/static/js/3.c2b5b670.chunk.js.map",
+    "index.html": "/RelicNFTStore/index.html",
+    "static/css/2.f47ed6a2.chunk.css.map": "/RelicNFTStore/static/css/2.f47ed6a2.chunk.css.map",
+    "static/css/main.9a8f5d17.chunk.css.map": "/RelicNFTStore/static/css/main.9a8f5d17.chunk.css.map",
+    "static/js/2.f6eab6b7.chunk.js.LICENSE.txt": "/RelicNFTStore/static/js/2.f6eab6b7.chunk.js.LICENSE.txt",
+    "static/media/bootstrap-icons.css": "/RelicNFTStore/static/media/bootstrap-icons.c1d7432e.woff"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.fc540eaf.js",
+    "static/css/2.f47ed6a2.chunk.css",
+    "static/js/2.f6eab6b7.chunk.js",
+    "static/css/main.9a8f5d17.chunk.css",
+    "static/js/main.02aaeccc.chunk.js"
+  ]
+}
