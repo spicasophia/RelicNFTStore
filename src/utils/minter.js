@@ -75,6 +75,7 @@ export const getNfts = async (minterContract) => {
           index: i,
           tokenId: i,
           owner,
+          seller: image.seller,
           price: image.price,
           sold: image.sold,
           name: meta.data.name,
@@ -132,7 +133,7 @@ export const transferOwnership = async (
       const { defaultAccount } = kit;
       // console.log(ownerAddress, newAddress, tokenId, defaultAccount);
       await minterContract.methods
-        .makeTransfer(ownerAddress, newAddress, tokenId)
+        .safeTransferFrom(ownerAddress, newAddress, tokenId)
         .send({ from: defaultAccount });
     });
   } catch (error) {
@@ -158,12 +159,12 @@ export const buyImage = async (
     console.log({ error });
   }
 };
-export const sellImage = async (minterContract, tokenId, performActions) => {
+export const sellImage = async (minterContract, tokenId, price, performActions) => {
   try {
     await performActions(async (kit) => {
       const { defaultAccount } = kit;
       await minterContract.methods
-        .sellImage(tokenId)
+        .sellImage(tokenId, price)
         .send({ from: defaultAccount });
     });
   } catch (error) {

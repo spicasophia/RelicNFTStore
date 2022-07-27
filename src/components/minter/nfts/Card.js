@@ -1,21 +1,20 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import { Card, Col, Badge, Stack, Row } from "react-bootstrap";
+import { Card, Col, Badge, Stack} from "react-bootstrap";
 import { truncateAddress } from "../../../utils";
 import { Form, Button } from "react-bootstrap";
 import Identicon from "../../ui/Identicon";
 // NFT Cards Functionality
-const NftCard = ({ nft, send, contractOwner, buyNft, sellNft }) => {
-  const { image, description, owner, name, index, price,sold } = nft;
+const NftCard = ({ nft, send, contractOwner, address, buyNft, sellNft }) => {
+  const { image, description, owner, seller, name, index, price,sold } = nft;
 
   const handleSend = (index, owner) => {
     if (!sendAddrss) return;
     send(sendAddrss, index, owner);
   };
   const [sendAddrss, setSendAddrss] = useState("");
-  {
-    console.log(sold);
-  }
+  const [newPrice, SetNewPrice] = useState(0);
+
   return (
     <Col key={index}>
       <Card className="h-100 bg-dark text-light">
@@ -41,10 +40,10 @@ const NftCard = ({ nft, send, contractOwner, buyNft, sellNft }) => {
           <div>
           
           </div>
-          {contractOwner === owner && (
+          {address === owner && sold ? (
             <>
               <Form.Control
-                className={"pt-2"}
+                className={"pt-2 mb-2"}
                 type="text"
                 placeholder="Send Address"
                 onChange={(e) => {
@@ -54,23 +53,34 @@ const NftCard = ({ nft, send, contractOwner, buyNft, sellNft }) => {
               <Button
                 variant="secondary"
                 onClick={() => handleSend(index, owner)}
+                className="mb-2"
               >
                 Send
               </Button>
             </>
-              )}
+              ) : ""}
 
-            {!sold ? (
+            {!sold && address !== seller  ? (
               <Button variant="secondary" onClick={buyNft}>
                 Buy
               </Button>
-            ) : contractOwner === owner ? (
-              <Button variant="danger" onClick={sellNft}>
+            ) : address === owner ? (
+              <>
+              <Form.Control
+              className={"pt-2 mb-2"}
+              type="number"
+              placeholder="Send Address"
+              onChange={(e) => {
+                SetNewPrice(e.target.value);
+              }}
+            />
+              <Button variant="danger" onClick={() => sellNft(newPrice)}>
                 Sell
               </Button>
+              </>
             ) : (
               <Button variant="danger" disabled>
-              Sold
+              {address === seller? "On Sale" : "Sold"}
               </Button>
           )}
         </Card.Body>

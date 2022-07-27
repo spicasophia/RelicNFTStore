@@ -19,7 +19,7 @@ const AddNfts = ({ save, address }) => {
 
   // check if all form data has been filled
   const isFormFilled = () =>{
-   return name && ipfsImage && description;
+   return name && ipfsImage && description && year;
   }
       
 

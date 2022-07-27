@@ -51,6 +51,7 @@ const App = function AppWrapper() {
               name="Relic NFT Store"
               updateBalance={getBalance}
               minterContract={minterContract}
+              address={address}
             />
           </main>
         </Container>
