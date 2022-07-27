@@ -11,7 +11,6 @@ import {
   buyImage,
   sellImage,
   createNft,
-  fetchNftContractOwner,
   transferOwnership
 } from "../../../utils/minter";
 import { Row } from "react-bootstrap";
@@ -20,7 +19,7 @@ const NftList = ({ minterContract, name }) => {
   const { performActions, address, kit } = useContractKit();
   const [nfts, setNfts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [nftOwner, setNftOwner] = useState(null);
+
   const  {defaultAccount} = kit;
 
   const addNft = async (data) => {
@@ -51,11 +50,11 @@ const NftList = ({ minterContract, name }) => {
       setLoading(false);
     }
   };
-  const sellNft = async (index) => {
+  const sellNft = async (index, price) => {
     try {
       setLoading(true);
       // Create a sell NFT functionality
-      await sellImage(minterContract, index, performActions);
+      await sellImage(minterContract, index, price, performActions);
       getAssets();
     } catch (error) {
       console.log(error);
@@ -78,11 +77,7 @@ const NftList = ({ minterContract, name }) => {
     }
   }
 
-  const fetchContractOwner = useCallback(async (minterContract) => {
-    // get the address that deployed the NFT contract
-    const _address = await fetchNftContractOwner(minterContract);
-    setNftOwner(_address);
-  }, []);
+
 
   const getAssets = useCallback(async () => {
     try {
@@ -106,12 +101,11 @@ const NftList = ({ minterContract, name }) => {
     try {
       if (address && minterContract) {
         getAssets();
-        fetchContractOwner(minterContract);
       }
     } catch (error) {
       console.log({ error });
     }
-  }, [minterContract, address, getAssets, fetchContractOwner]);
+  }, [minterContract, address, getAssets]);
 
   if (address) {
     return (
@@ -147,11 +141,12 @@ const NftList = ({ minterContract, name }) => {
                   key={_nft.index}
                   contractOwner = {defaultAccount}
                   buyNft={() => buyNft(_nft.index, _nft.tokenId)}
-                  sellNft={() => sellNft(_nft.tokenId)}
+                  sellNft={(newPrice) => sellNft(_nft.tokenId, newPrice)}
                   send = {sendNft}
                   nft={{
                     ..._nft,
                   }}
+                  address={address}
                 />
               ))}
             </Row>

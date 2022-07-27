@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -13,35 +13,36 @@ contract RelicNFTStore is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     Counters.Counter private _tokenIdCounter;
     Counters.Counter private _tradeCount;
 
-    uint mintFee;
+    uint public mintFee = 1 ether;
     // min value to start implementing a mintFee
-    uint implementFee = 100;  
+    uint implementFee = 100;
 
-    bool public paused; 
+    bool public paused;
     string public pauseReason;
-    constructor() ERC721("RelicNFTStore", "RSNFT") {
-    }
 
-    struct Image {
-        uint256 tokenId;
+    constructor() ERC721("RelicNFTStore", "RSNFT") {}
+
+    struct Relic {
         address payable seller;
         address payable owner;
         uint256 price;
         bool sold;
     }
 
-    mapping(uint256 => Image) private images;
-
+    mapping(uint256 => Relic) private relics;
+    // keeps track of the reason why an Relic was deleted
     mapping(uint => string) private reason;
+
     mapping(string => bool) private takenUri;
+
     event Create(address seller, uint tokenId);
 
     event Sold(address seller, address buyer, uint tokenId);
-    
+
     event Sell(address seller, uint tokenId);
 
     event Deleted(string reason, uint tokenId);
-    
+
     event Pause(bool paused);
 
     modifier exist(uint tokenId) {
@@ -49,127 +50,152 @@ contract RelicNFTStore is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         _;
     }
 
-    modifier isPause(){
+    modifier isPause() {
         require(!paused, "Transactions have been paused");
         _;
     }
-    // mint an NFt
+
+    modifier checkPrice(uint price) {
+        require(price > 0, "Price must be at least 1 wei");
+        _;
+    }
+
+    modifier checkReason(string memory _reason) {
+        require(bytes(_reason).length > 0, "you need to provide a reason");
+        _;
+    }
+
+    /// @dev checks if Relic can be transferred
+    modifier canTransfer(uint tokenId, address to) {
+        require(to != address(0), "Enter a valid address");
+        require(relics[tokenId].sold, "Token is currently on sale");
+        _;
+    }
+
+    /// @dev mint a Relic NFT
     function safeMint(string memory uri, uint256 price)
-        public
-        payable isPause
-        returns (uint256)
+        external
+        payable
+        isPause
+        checkPrice(price)
     {
         require(bytes(uri).length > 0, "Enter valid uri");
         require(!takenUri[uri], "URI already in use");
-        require(price > 0, "Price must be at least 1 wei");
         uint256 tokenId = _tokenIdCounter.current();
-        if(_tradeCount.current() >= implementFee){
-            mintFee = 1 ether;
+        if (_tradeCount.current() >= implementFee) {
             require(msg.value == mintFee, "You need to pay to mint");
-            (bool success,) = payable(owner()).call{value: mintFee}("");
+            (bool success, ) = payable(owner()).call{value: mintFee}("");
             require(success, "Failed to pay mint fee");
         }
         _tokenIdCounter.increment();
         takenUri[uri] = true;
-        _mint(msg.sender, tokenId);
+        _mint(address(this), tokenId);
         _setTokenURI(tokenId, uri);
-        createImage(tokenId, price);
+        createRelic(tokenId, price);
         emit Create(msg.sender, tokenId);
-        return tokenId;
-    }
-    // NFT Transfer Functionality
-
-    function makeTransfer
-    (address to, uint256 tokenId)public exist(tokenId) isPause(){
-        require(msg.sender == ownerOf(tokenId) || msg.sender == getApproved(tokenId), "Only the owner or an approved operator can perform this action");
-        require(to != address(0), "Enter a valid address");
-        require(images[tokenId].sold, "Token is currently on sale");
-        _transfer(msg.sender, to, tokenId);
-        images[tokenId].owner = payable(to);
-        _tradeCount.increment();
     }
 
-    //Create NFT Functionality
-    function createImage(uint256 tokenId, uint256 price) private {
-        images[tokenId] = Image(
-            tokenId,
+    /// @dev Create NFT Functionality
+    function createRelic(uint256 tokenId, uint256 price) private {
+        relics[tokenId] = Relic(
             payable(msg.sender),
             payable(address(this)),
             price,
             false
         );
-
-        _transfer(msg.sender, address(this), tokenId);
     }
 
-    //Buy NFT Functionality
-    function buyImage(uint256 tokenId) public payable exist(tokenId) isPause(){
-        
-        require(msg.sender != images[tokenId].seller, "You can't buy your own NFT");
-        uint256 price = images[tokenId].price;
-        address seller = images[tokenId].seller;
+    /// @dev Buy NFT Functionality
+    function buyRelic(uint256 tokenId) external payable isPause exist(tokenId) {
         require(
-            msg.value == price,
+            msg.sender != relics[tokenId].seller,
+            "You can't buy your own NFT"
+        );
+        require(
+            msg.value == relics[tokenId].price,
             "Please submit the asking price in order to complete the purchase"
         );
-        images[tokenId].owner = payable(msg.sender);
-        images[tokenId].sold = true;
-        images[tokenId].seller = payable(address(0));
-        images[tokenId].price = 0;
+        uint256 price = relics[tokenId].price;
+        address seller = relics[tokenId].seller;
+        relics[tokenId].owner = payable(msg.sender);
+        relics[tokenId].sold = true;
+        relics[tokenId].seller = payable(address(0));
+        relics[tokenId].price = 0;
         _tradeCount.increment();
         _transfer(address(this), msg.sender, tokenId);
 
-        (bool success,) = seller.call{value: price}("");
+        (bool success, ) = seller.call{value: price}("");
         require(success, "Payment failed");
         emit Sold(seller, msg.sender, tokenId);
-        
     }
 
-    //Sell NFT Functionality
-    function sellImage(uint256 tokenId) public payable exist(tokenId) isPause() {
-        Image storage currentImage = images[tokenId];
+    /// @dev Sell NFT Functionality
+    function sellRelic(uint256 tokenId, uint price)
+        external
+        payable
+        isPause
+        exist(tokenId)
+        checkPrice(price)
+    {
+        Relic storage currentRelic = relics[tokenId];
         require(
-            currentImage.owner == msg.sender,
+            currentRelic.owner == msg.sender,
             "Only the owner of this NFT can perform this operation"
         );
-        require( currentImage.seller == address(0), "NFT is already on sale");
-        require(currentImage.sold, "NFT is already on sale");
-        currentImage.sold = false;
-        currentImage.seller = payable(msg.sender);
-        currentImage.owner = payable(address(this));
+        require(
+            currentRelic.sold && currentRelic.seller == address(0),
+            "NFT is already on sale"
+        );
+        currentRelic.sold = false;
+        currentRelic.price = price;
+        currentRelic.seller = payable(msg.sender);
+        currentRelic.owner = payable(address(this));
 
         _transfer(msg.sender, address(this), tokenId);
         emit Sell(msg.sender, tokenId);
     }
 
-    function pause(string memory _pauseReason) external onlyOwner {
+    function pause(string calldata _pauseReason)
+        public
+        onlyOwner
+        checkReason(_pauseReason)
+    {
         require(!paused, "Already paused");
-        require(bytes(_pauseReason).length > 0, "Invalid pause reason");
         paused = true;
         pauseReason = _pauseReason;
         emit Pause(paused);
     }
 
-    function unPause() external onlyOwner {
+    function unPause() public onlyOwner {
         require(paused, "Not paused");
         paused = false;
         pauseReason = "";
         emit Pause(paused);
     }
 
-    function removeImage(uint tokenId, string memory _reason) public payable exist(tokenId) onlyOwner{
-        require(bytes(_reason).length > 0, "Enter a valid reason");
+    function removeRelic(uint tokenId, string calldata _reason)
+        public
+        payable
+        exist(tokenId)
+        onlyOwner
+        checkReason(_reason)
+    {
         reason[tokenId] = _reason;
-        delete images[tokenId];
+        delete relics[tokenId];
         _burn(tokenId);
         emit Deleted(_reason, tokenId);
     }
 
-    function getImage(uint256 tokenId) public view exist(tokenId) returns (Image memory) {
-        return images[tokenId];
+    function getRelic(uint256 tokenId)
+        public
+        view
+        exist(tokenId)
+        returns (Relic memory)
+    {
+        return relics[tokenId];
     }
 
-    function getImageLength() public view returns (uint256) {
+    function getRelicLength() public view returns (uint256) {
         return _tokenIdCounter.current();
     }
 
@@ -177,7 +203,36 @@ contract RelicNFTStore is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         return _tradeCount.current();
     }
 
-   function _beforeTokenTransfer(
+    /**
+     * @dev See {IERC721-transferFrom}.
+     * @notice Changes is made to transferFrom to update respective states
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override isPause canTransfer(tokenId, to) {
+        relics[tokenId].owner = payable(to);
+        _tradeCount.increment();
+        super.transferFrom(from, to, tokenId);
+    }
+
+    /**
+     * @dev See {IERC721-safeTransferFrom}.
+     * @notice Changes is made to transferFrom to update respective states
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override isPause canTransfer(tokenId, to) {
+        relics[tokenId].owner = payable(to);
+        _tradeCount.increment();
+        _safeTransfer(from, to, tokenId, data);
+    }
+
+    function _beforeTokenTransfer(
         address from,
         address to,
         uint256 tokenId

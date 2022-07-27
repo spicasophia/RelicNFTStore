@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button } from "react-bootstrap";
-import PropTypes from 'prop-types';
 
 const myStyle={
   backgroundImage: 
@@ -41,8 +40,6 @@ const Cover = ({ connect }) => {
         </div>
     );
   
-
-  return null;
 };
 
 
