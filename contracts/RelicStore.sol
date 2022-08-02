@@ -53,6 +53,11 @@ contract RelicNFTStore is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         require(!paused, "Transactions have been paused");
         _;
     }
+
+    modifier onlyOwner(uint tokenId){
+        require(msg.sender == images[tokenId].owner, "Only the owner can access this function");
+    }
+
     // mint an NFt
     function safeMint(string memory uri, uint256 price)
         public
@@ -115,7 +120,6 @@ contract RelicNFTStore is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         images[tokenId].owner = payable(msg.sender);
         images[tokenId].sold = true;
         images[tokenId].seller = payable(address(0));
-        images[tokenId].price = 0;
         _tradeCount.increment();
         _transfer(address(this), msg.sender, tokenId);
 
@@ -126,12 +130,8 @@ contract RelicNFTStore is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     }
 
     //Sell NFT Functionality
-    function sellImage(uint256 tokenId) public payable exist(tokenId) isPause() {
+    function sellImage(uint256 tokenId) public payable exist(tokenId) isPause() onlyOwner(tokenId){
         Image storage currentImage = images[tokenId];
-        require(
-            currentImage.owner == msg.sender,
-            "Only the owner of this NFT can perform this operation"
-        );
         require( currentImage.seller == address(0), "NFT is already on sale");
         require(currentImage.sold, "NFT is already on sale");
         currentImage.sold = false;
@@ -140,6 +140,11 @@ contract RelicNFTStore is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
 
         _transfer(msg.sender, address(this), tokenId);
         emit Sell(msg.sender, tokenId);
+    }
+
+    //Function using which the owner can change the price of the relic
+    function changePrice(uint256 tokenId, uint256 price) public onlyOwner(tokenId){
+        images[tokenId].price = price;
     }
 
     function pause(string memory _pauseReason) external onlyOwner {
